@@ -14,8 +14,8 @@ public class Task {
     private String description;
     private boolean done;
     private LocalDateTime deadline;
-    private LocalDateTime createdOn;
-    private LocalDateTime updatedOn;
+    @Embedded
+    private Audit audit = new Audit();
 
     public Task() {
     }
@@ -57,16 +57,5 @@ public class Task {
         done = source.done;
         deadline = source.deadline;
     }
-
-    @PrePersist
-    public void prePersist() {
-        createdOn = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    public void preMerge() {
-        updatedOn =LocalDateTime.now();
-    }
-
 
 }
