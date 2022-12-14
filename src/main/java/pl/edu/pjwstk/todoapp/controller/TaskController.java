@@ -6,7 +6,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.edu.pjwstk.todoapp.model.Task;
-import pl.edu.pjwstk.todoapp.model.SqlTaskRepository;
 import pl.edu.pjwstk.todoapp.model.TaskRepository;
 
 import javax.transaction.Transactional;
