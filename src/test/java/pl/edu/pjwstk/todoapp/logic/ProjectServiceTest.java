@@ -3,12 +3,13 @@ package pl.edu.pjwstk.todoapp.logic;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import pl.edu.pjwstk.todoapp.TaskConfigurationProperties;
-import pl.edu.pjwstk.todoapp.model.ProjectRepository;
-import pl.edu.pjwstk.todoapp.model.TaskGroup;
-import pl.edu.pjwstk.todoapp.model.TaskGroupRepository;
+import pl.edu.pjwstk.todoapp.model.*;
+import pl.edu.pjwstk.todoapp.model.projection.GroupReadModel;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
@@ -80,14 +81,46 @@ class ProjectServiceTest {
     @DisplayName("should create a new group form project")
     void createGroup_configurationOk_existingProject_createAndSaveGroup() {
         //given
-        var mockRepository = mock(ProjectRepository.class);
-        when(mockRepository.findById(anyLong())).thenReturn(Optional.empty());
+        var today = LocalDate.now().atStartOfDay();
         //and
-        TaskGroupRepository inMemoryGroupRepo = inMemoryGroupRepository();
+        var mockRepository = mock(ProjectRepository.class);
+        when(mockRepository.findById(anyLong())).
+                thenReturn(Optional.of(
+                        projectWith("bar", Set.of(-1, -2))
+                ));
+        //and
+        InMemoryGroupRepository inMemoryGroupRepo = inMemoryGroupRepository();
+        int countBeforeCall = inMemoryGroupRepo.count();
         //and
         TaskConfigurationProperties mockConfig = configurationReturning(true);
+        //system under test
+        var toTest = new ProjectService(mockRepository, inMemoryGroupRepo, mockConfig);
+
+        //when
+        GroupReadModel result = toTest.createGroup(today, 1);
+
+        //then
+        assertThat(result.getDescription()).isEqualTo("bar");
+        assertThat(result.getDeadline()).isEqualTo(today.minusDays(1));
+        assertThat(result.getTasks());
+        assertThat(countBeforeCall + 1)
+                .isNotEqualTo(inMemoryGroupRepo.count());
     }
 
+    private Project projectWith(String projectDescription, Set<Integer> daysToDeadline) {
+        var result = mock(Project.class);
+        when(result.getDescription()).thenReturn(projectDescription);
+        when(result.getSteps()).thenReturn(
+                daysToDeadline.stream()
+                        .map(days -> {
+                            var step = mock(ProjectStep.class);
+                            when(step.getDescription()).thenReturn("foo");
+                            when(step.getDaysToDeadline()).thenReturn(days);
+                            return step;
+                        }).collect(Collectors.toSet())
+        );
+        return result;
+    }
 
     private TaskGroupRepository groupRepositoryReturining(final boolean result) {
         var mockGroupRepository = mock(TaskGroupRepository.class);
@@ -103,10 +136,19 @@ class ProjectServiceTest {
         return mockConfig;
     }
 
-    private TaskGroupRepository inMemoryGroupRepository() {
-        return new TaskGroupRepository() {
+    private InMemoryGroupRepository inMemoryGroupRepository() {
+        return new InMemoryGroupRepository();
+    }
+
+    private static class InMemoryGroupRepository implements TaskGroupRepository {
+
             private long index = 0;
             private Map<Long, TaskGroup> map = new HashMap<>();
+
+            public int count() {
+                return map.values().size();
+            }
+
             @Override
             public List<TaskGroup> findAll() {
                 return new ArrayList<>(map.values());
@@ -119,7 +161,7 @@ class ProjectServiceTest {
 
             @Override
             public TaskGroup save(TaskGroup entity) {
-                if(entity.getId() == 0) {
+                if (entity.getId() == 0) {
                     try {
                         TaskGroup.class.getDeclaredField("id").set(entity, ++index);
                     } catch (NoSuchFieldException | IllegalAccessException e) {
@@ -136,6 +178,7 @@ class ProjectServiceTest {
                         .filter(group -> !group.isDone())
                         .anyMatch(group -> group.getProject() != null && group.getProject().getId() == projectId);
             }
-        };
-    }
+        }
+
+
 }
