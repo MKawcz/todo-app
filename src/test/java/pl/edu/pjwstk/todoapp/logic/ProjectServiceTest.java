@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
-import static org.assertj.core.api.AssertionsForClassTypes.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.catchThrowable;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -23,7 +23,7 @@ class ProjectServiceTest {
     @DisplayName("should throw IllegalStateException when configured to allow just 1 group and the other undone group exists")
     void createGroup_noMultipleGroupsConfig_And_undoneGroupExists_throwsIllegalStateException() {
         //given
-        TaskGroupRepository mockGroupRepository = groupRepositoryReturining(true);
+        TaskGroupRepository mockGroupRepository = groupRepositoryReturning(true);
         //and
         TaskConfigurationProperties mockConfig = configurationReturning(false);
         //system under test
@@ -63,7 +63,7 @@ class ProjectServiceTest {
         var mockRepository = mock(ProjectRepository.class);
         when(mockRepository.findById(anyLong())).thenReturn(Optional.empty());
         //and
-        TaskGroupRepository mockGroupRepository = groupRepositoryReturining(false);
+        TaskGroupRepository mockGroupRepository = groupRepositoryReturning(false);
         //and
         TaskConfigurationProperties mockConfig = configurationReturning(true);
         //system under test
@@ -79,15 +79,14 @@ class ProjectServiceTest {
 
     @Test
     @DisplayName("should create a new group form project")
-    void createGroup_configurationOk_existingProject_createAndSaveGroup() {
+    void createGroup_configurationOk_existingProject_createsAndSavesGroup() {
         //given
         var today = LocalDate.now().atStartOfDay();
         //and
+        var project = projectWith("bar", Set.of(-1, -2));
         var mockRepository = mock(ProjectRepository.class);
         when(mockRepository.findById(anyLong())).
-                thenReturn(Optional.of(
-                        projectWith("bar", Set.of(-1, -2))
-                ));
+                thenReturn(Optional.of(project));
         //and
         InMemoryGroupRepository inMemoryGroupRepo = inMemoryGroupRepository();
         int countBeforeCall = inMemoryGroupRepo.count();
@@ -102,27 +101,25 @@ class ProjectServiceTest {
         //then
         assertThat(result.getDescription()).isEqualTo("bar");
         assertThat(result.getDeadline()).isEqualTo(today.minusDays(1));
-        assertThat(result.getTasks());
-        assertThat(countBeforeCall + 1)
-                .isNotEqualTo(inMemoryGroupRepo.count());
+        assertThat(result.getTasks()).allMatch(task -> task.getDescription().equals("foo"));
+        assertThat(countBeforeCall + 1).isEqualTo(inMemoryGroupRepo.count());
     }
 
     private Project projectWith(String projectDescription, Set<Integer> daysToDeadline) {
         var result = mock(Project.class);
         when(result.getDescription()).thenReturn(projectDescription);
-        when(result.getSteps()).thenReturn(
-                daysToDeadline.stream()
-                        .map(days -> {
-                            var step = mock(ProjectStep.class);
-                            when(step.getDescription()).thenReturn("foo");
-                            when(step.getDaysToDeadline()).thenReturn(days);
-                            return step;
-                        }).collect(Collectors.toSet())
-        );
+        Set<ProjectStep> steps = daysToDeadline.stream()
+                .map(days -> {
+                    var step = mock(ProjectStep.class);
+                    when(step.getDescription()).thenReturn("foo");
+                    when(step.getDaysToDeadline()).thenReturn(days);
+                    return step;
+                }).collect(Collectors.toSet());
+        when(result.getSteps()).thenReturn(steps);
         return result;
     }
 
-    private TaskGroupRepository groupRepositoryReturining(final boolean result) {
+    private TaskGroupRepository groupRepositoryReturning(final boolean result) {
         var mockGroupRepository = mock(TaskGroupRepository.class);
         when(mockGroupRepository.existsByDoneIsFalseAndProject_Id(anyLong())).thenReturn(result);
         return mockGroupRepository;
@@ -163,7 +160,9 @@ class ProjectServiceTest {
             public TaskGroup save(TaskGroup entity) {
                 if (entity.getId() == 0) {
                     try {
-                        TaskGroup.class.getDeclaredField("id").set(entity, ++index);
+                        var field = TaskGroup.class.getDeclaredField("id");
+                        field.setAccessible(true);
+                        field.set(entity, ++index);
                     } catch (NoSuchFieldException | IllegalAccessException e) {
                         throw new RuntimeException(e);
                     }
