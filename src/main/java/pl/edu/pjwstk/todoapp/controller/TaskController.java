@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import pl.edu.pjwstk.todoapp.logic.TaskService;
 import pl.edu.pjwstk.todoapp.model.Task;
 import pl.edu.pjwstk.todoapp.model.TaskRepository;
 
@@ -12,43 +13,52 @@ import javax.transaction.Transactional;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @RestController
+@RequestMapping("/tasks")
 public class TaskController {
     public static final Logger logger = LoggerFactory.getLogger(TaskController.class);
     private final TaskRepository repository;
+    private final TaskService service;
 
-    public TaskController(final TaskRepository repository) {
+    public TaskController(final TaskRepository repository, TaskService service) {
         this.repository = repository;
+        this.service = service;
     }
 
-    @PostMapping("/tasks")
+    @PostMapping
     public ResponseEntity<Task> createTask(@RequestBody @Valid Task toCreate) {
         Task result = repository.save(toCreate);
         return ResponseEntity.created(URI.create("/" + result.getId())).body(result);
     }
 
-    @GetMapping(value = "/tasks", params = {"!sort", "!page", "!size"})
-    public ResponseEntity<List<Task>> readAllTasks(){
+    @GetMapping(params = {"!sort", "!page", "!size"})
+    public CompletableFuture<ResponseEntity<List<Task>>> readAllTasks(){
         logger.warn("Exposing all the tasks!");
-        return ResponseEntity.ok(repository.findAll());
+        return service.findAllAsync().thenApply(ResponseEntity::ok);
     }
 
-    @GetMapping("/tasks")
+    @GetMapping
     public ResponseEntity<List<Task>> readAllTasks(Pageable page){
         logger.info("Custom pageable");
         return ResponseEntity.ok(repository.findAll(page).getContent());
     }
 
-    @GetMapping("/tasks/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Task> readTask(@PathVariable long id) {
         return repository.findById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @PutMapping("/tasks/{id}")
-    ResponseEntity<?> updateTask(@PathVariable long id, @RequestBody @Valid Task toUpdate){
+    @GetMapping(value = "/search/done")
+    public ResponseEntity<List<Task>> readDoneTasks(@RequestParam(defaultValue = "true", required = false) boolean state) {
+        return ResponseEntity.ok(repository.findByDone(state));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<?> updateTask(@PathVariable long id, @RequestBody @Valid Task toUpdate){
         if(!repository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
@@ -61,7 +71,7 @@ public class TaskController {
     }
 
     @Transactional
-    @PatchMapping ("/tasks/{id}")
+    @PatchMapping ("/{id}")
     public ResponseEntity<?> toggleTask(@PathVariable long id) {
         if(!repository.existsById(id)){
             return ResponseEntity.notFound().build();
