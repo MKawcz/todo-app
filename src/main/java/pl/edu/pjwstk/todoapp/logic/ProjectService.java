@@ -6,6 +6,7 @@ import pl.edu.pjwstk.todoapp.model.*;
 import pl.edu.pjwstk.todoapp.model.projection.GroupReadModel;
 import pl.edu.pjwstk.todoapp.model.projection.GroupTaskWriteModel;
 import pl.edu.pjwstk.todoapp.model.projection.GroupWriteModel;
+import pl.edu.pjwstk.todoapp.model.projection.ProjectWriteModel;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -30,8 +31,8 @@ public class ProjectService {
         return repository.findAll();
     }
 
-    public Project save(final Project toSave) {
-        return repository.save(toSave);
+    public Project save(final ProjectWriteModel toSave) {
+        return repository.save(toSave.toProject());
     }
 
     public GroupReadModel createGroup(LocalDateTime deadline, long projectId) {
@@ -53,7 +54,7 @@ public class ProjectService {
                                 }
                                 ).collect(Collectors.toSet())
                     );
-                    return taskGroupService.createGroup(targetGroup);
+                    return taskGroupService.createGroup(targetGroup, project);
                 }).orElseThrow(() -> new IllegalArgumentException("Project with given id not found"));
     }
 

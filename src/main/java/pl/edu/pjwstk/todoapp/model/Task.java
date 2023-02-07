@@ -46,7 +46,7 @@ public class Task {
         return description;
     }
 
-    void setDescription(String description) {
+    public void setDescription(String description) {
         this.description = description;
     }
 
@@ -62,15 +62,15 @@ public class Task {
         return deadline;
     }
 
-    void setDeadline(LocalDateTime deadline) {
+    public void setDeadline(LocalDateTime deadline) {
         this.deadline = deadline;
     }
 
-    TaskGroup getGroup() {
+    public TaskGroup getGroup() {
         return group;
     }
 
-    void setGroup(TaskGroup group) {
+    public void setGroup(TaskGroup group) {
         this.group = group;
     }
 

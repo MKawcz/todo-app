@@ -24,7 +24,7 @@ public class Project {
         return id;
     }
 
-    public void setId(long id) {
+    void setId(long id) {
         this.id = id;
     }
 
@@ -36,11 +36,11 @@ public class Project {
         this.description = description;
     }
 
-    Set<TaskGroup> getGroups() {
+    public Set<TaskGroup> getGroups() {
         return groups;
     }
 
-    void setGroups(Set<TaskGroup> groups) {
+    public void setGroups(Set<TaskGroup> groups) {
         this.groups = groups;
     }
 
@@ -48,7 +48,7 @@ public class Project {
         return steps;
     }
 
-    void setSteps(Set<ProjectStep> steps) {
+    public void setSteps(Set<ProjectStep> steps) {
         this.steps = steps;
     }
 }

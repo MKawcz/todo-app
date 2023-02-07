@@ -3,6 +3,7 @@ package pl.edu.pjwstk.todoapp.logic;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.annotation.RequestScope;
 import pl.edu.pjwstk.todoapp.TaskConfigurationProperties;
+import pl.edu.pjwstk.todoapp.model.Project;
 import pl.edu.pjwstk.todoapp.model.TaskGroup;
 import pl.edu.pjwstk.todoapp.model.TaskGroupRepository;
 import pl.edu.pjwstk.todoapp.model.TaskRepository;
@@ -24,7 +25,11 @@ public class TaskGroupService {
     }
 
     public GroupReadModel createGroup(final GroupWriteModel source) {
-        TaskGroup result = repository.save(source.toGroup());
+        return createGroup(source, null);
+    }
+
+    public GroupReadModel createGroup(GroupWriteModel source, Project project) {
+        TaskGroup result = repository.save(source.toGroup(project));
         return new GroupReadModel(result);
     }
 
@@ -43,4 +48,6 @@ public class TaskGroupService {
        result.setDone(!result.isDone());
        repository.save(result);
     }
+
+
 }
