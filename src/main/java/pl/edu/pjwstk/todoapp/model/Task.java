@@ -66,7 +66,7 @@ public class Task {
         this.deadline = deadline;
     }
 
-    public TaskGroup getGroup() {
+    protected TaskGroup getGroup() {
         return group;
     }
 

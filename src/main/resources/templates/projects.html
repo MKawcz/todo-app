@@ -29,6 +29,7 @@
 </head>
 <body>
 <main>
+    <!--/*@thymesVar id="message" type="java.lang.String"*/-->
     <h1 th:if="${message} != null" th:text="${message}"></h1>
     <!--/*@thymesVar id="projects" type="java.util.List<pl.edu.pjwstk.todoapp.model.Project>"*/-->
     <dl th:each="project : ${projects}" class="Bd P(10px)">
